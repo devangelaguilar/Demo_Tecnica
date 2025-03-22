@@ -1,0 +1,193 @@
+<!-- Navbar for User and Profile Button -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+  <div class="container-fluid">    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" 
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+         <li class="nav-item">
+             <a class="nav-link active" aria-current="page" href="#">Home</a>
+         </li>
+         <!-- Only show "Users" if role is admin -->
+         <li class="nav-item" *ngIf="isAdmin()">
+             <a class="nav-link" href="products">Productos</a>
+         </li>
+      </ul>
+      <div class="d-flex">
+         <a class="btn btn-outline-primary" href="profile">Perfil</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h2 class="mb-4">Usuarios</h2>
+  
+  <!-- Add User Button -->
+  <div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addUserModal"
+      (click)="openAddUserModal()">Añadir Usuario</button>
+    <button type="button" class="btn btn-danger me-2" (click)="exportToPDF()">Exportar a PDF</button>
+    <button type="button" class="btn btn-success" (click)="exportToExcel()">Exportar a Excel</button>
+  </div>
+
+  <!-- Users Table -->
+  <table id="usersTable" class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Codigo</th>
+        <th>Nombre</th>
+        <th>Usuario</th>
+        <th>Perfil</th>
+        <th>Fecha de Creacion</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users">
+        <td>{{ user.id }}</td>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role }}</td>
+        <td>{{ user.created_at | date:'medium' }}</td>
+        <td>
+          <button type="button" class="btn btn-info btn-sm me-2" 
+                  data-bs-toggle="modal" data-bs-target="#infoUserModal" 
+                  (click)="openInfoModal(user)">
+            Info
+          </button>
+          <button type="button" class="btn btn-primary btn-sm me-2" 
+                  data-bs-toggle="modal" data-bs-target="#editUserModal" 
+                  (click)="openEditModal(user)">
+            Editar
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" (click)="deleteUser(user.id)">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form (ngSubmit)="createUser()" #addUserForm="ngForm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="addUserModalLabel" class="modal-title">Añadir usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Name Field -->
+          <div class="mb-3">
+            <label for="newUserName" class="form-label">Nombre</label>
+            <input type="text" id="newUserName" name="name" class="form-control" required [(ngModel)]="newUser.name">
+          </div>
+          <!-- Email Field -->
+          <div class="mb-3">
+            <label for="newUserEmail" class="form-label">Correo</label>
+            <input type="email" id="newUserEmail" name="email" class="form-control" required [(ngModel)]="newUser.email">
+          </div>
+          <!-- Phone Field -->
+          <div class="mb-3">
+            <label for="newUserPhone" class="form-label">Telefono</label>
+            <input type="text" id="newUserPhone" name="phone" class="form-control" required [(ngModel)]="newUser.phone">
+          </div>
+          <!-- Role Field -->
+          <div class="mb-3">
+            <label for="newUserRole" class="form-label">Perfil</label>
+            <select id="newUserRole" name="role" class="form-select" required [(ngModel)]="newUser.role">
+              <option value="user">Usuario</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label for="newUserPhoto" class="form-label">Foto</label>
+            <input type="file" id="newUserPhoto" name="photo" class="form-control" (change)="onNewUserFileChange($event)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!addUserForm.form.valid">Añadir</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form (ngSubmit)="updateUser()" #editUserForm="ngForm">
+      <div class="modal-content" *ngIf="editUser">
+        <div class="modal-header">
+          <h5 id="editUserModalLabel" class="modal-title">Editar Usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editUserName" class="form-label">Nombre</label>
+            <input type="text" id="editUserName" name="name" class="form-control" required [(ngModel)]="editUser.name">
+          </div>
+          <div class="mb-3">
+            <label for="editUserEmail" class="form-label">Usuario</label>
+            <input type="email" id="editUserEmail" name="email" class="form-control" required [(ngModel)]="editUser.email">
+          </div>
+          <div class="mb-3">
+            <label for="editUserRole" class="form-label">Perfil</label>
+            <select id="editUserRole" name="role" class="form-select" required [(ngModel)]="editUser.role">
+              <option value="user">Usuario</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <!-- Phone field -->
+          <div class="mb-3">
+            <label for="editUserPhone" class="form-label">Telefono</label>
+            <input type="text" id="editUserPhone" name="phone" class="form-control" required [(ngModel)]="editUser.phone">
+          </div>
+          <!-- File upload for Photo -->
+          <div class="mb-3">
+            <label for="editUserPhoto" class="form-label">Foto</label>
+            <input type="file" id="editUserPhoto" name="photo" class="form-control" (change)="onFileChange($event)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!editUserForm.form.valid">Actualizar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- User Info Modal -->
+<div class="modal fade" id="infoUserModal" tabindex="-1" aria-labelledby="infoUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" *ngIf="infoUser">
+      <div class="modal-header">
+        <h5 id="infoUserModalLabel" class="modal-title">Informacion del usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Codigo:</strong> {{ infoUser.id }}</p>
+        <p><strong>Nombre:</strong> {{ infoUser.name }}</p>
+        <p><strong>Usuario:</strong> {{ infoUser.email }}</p>
+        <p><strong>Perfil:</strong> {{ infoUser.role }}</p>
+        <p><strong>Telefono:</strong> {{ infoUser.phone }}</p>
+        <p>
+          <strong>Foto:</strong>
+          <img src="http://localhost:8000/storage/{{ infoUser.photo }}" alt="User Photo" class="img-fluid" style="max-width: 150px;">
+        </p>
+        <p><strong>Creado:</strong> {{ infoUser.created_at | date:'medium' }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
